@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrônomo Online</title>
+    <style>
+        .bolinha {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: black;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        .bolinha.ativa {
+            background-color: yellow;
+        }
+        .linha {
+           padding-top: 30px;
+        }
+        .coluna {
+        	padding-left: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="bolinhas-container">
+        <!-- As bolinhas serão geradas aqui via JavaScript -->
+    </div>
+    
+    <div class="info">
+        <span id="lbl-rodadas">Rodadas: 0</span> 
+        <span class="coluna" id="lbl-perc-acertos">% acertos: 0</span>
+        <span class="coluna" id="lbl-erros">Erros: 0</span> 
+        <span class="coluna" id="lbl-tempo">Tempo: 0s</span>
+    </div>
+
+
+    <div class="config">
+    	<div class="linha">
+    		<button id="btn-erro">Erro (+1)</button>
+    		<button id="btn-reset">Zerar Erros</button>
+    	</div>
+    	<div  class="linha">
+        	<label for="entry-bolinhas">Nº de Bolinhas:</label>
+        	<input type="number" id="entry-bolinhas" value="4" min="1">
+        
+	        <label for="entry-bpm">BPM:</label>
+        	<input type="number" id="entry-bpm" value="60" min="30">
+        </div>	
+        <div  class="linha">
+	        <button id="btn-start">Iniciar</button>
+        	<button id="btn-stop">Parar</button>
+        </div>
+        
+        
+    </div>
+
+
+    <!-- Aqui vamos adicionar JavaScript para tornar tudo interativo -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    let interval;
+    let currentBolinha = 0;
+    let rodadas = 0;
+    let erros = 0;
+    let tempo = 0;
+    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let oscillator;
+    let startTime = null;
+    let percAcertos = 0;
+
+function playBeep() {
+    oscillator = audioContext.createOscillator();
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // 440 Hz é a frequência de um A4 (Lá)  //220 é um A3
+    oscillator.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1); // O beep durará 100ms
+}
+
+
+    const bolinhasContainer = document.getElementById('bolinhas-container');
+    const entryBolinhas = document.getElementById('entry-bolinhas');
+    const entryBPM = document.getElementById('entry-bpm');
+    const lblRodadas = document.getElementById('lbl-rodadas');
+    const lblErros = document.getElementById('lbl-erros');
+    const lblTempo = document.getElementById('lbl-tempo');
+    const lblPercAcertos = document.getElementById('lbl-perc-acertos');
+
+    function gerarBolinhas() {
+        bolinhasContainer.innerHTML = '';
+        let numBolinhas = parseInt(entryBolinhas.value, 10);
+        for (let i = 0; i < numBolinhas; i++) {
+            let bolinha = document.createElement('div');
+            bolinha.classList.add('bolinha');
+            bolinhasContainer.appendChild(bolinha);
+        }
+    }
+
+    function iniciarMetronomo() {
+    	startTime = new Date();
+        clearInterval(interval);
+        currentBolinha = 0;
+        let bolinhas = document.querySelectorAll('.bolinha');
+        let bpm = parseInt(entryBPM.value, 10);
+        let intervalLength = 60000 / bpm;
+
+        interval = setInterval(function() {
+            bolinhas.forEach(b => b.classList.remove('ativa'));
+            bolinhas[currentBolinha].classList.add('ativa');
+            playBeep();
+
+            currentBolinha = (currentBolinha + 1) % bolinhas.length;
+
+	     //atualizar o timer
+             let elapsedTime = new Date() - startTime;
+	     let minutes = Math.floor(elapsedTime / (60 * 1000));
+	     let seconds = Math.floor((elapsedTime % (60 * 1000)) / 1000);
+	     lblTempo.textContent = "Tempo: " + minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+			
+            if (currentBolinha === 0) {
+                rodadas++;
+                percAcertos = (((rodadas-erros)/rodadas)*100);
+                lblRodadas.textContent = "Rodadas: " + rodadas;   
+                lblPercAcertos.textContent = "% ACERTOS: " + percAcertos;   
+                
+                if (rodadas >= 10 && percAcertos >= 80) {
+		    lblPercAcertos.style.backgroundColor = "rgb(59, 237, 59)";
+		} 
+            }
+            
+
+            
+        }, intervalLength);
+    }
+
+    function pararMetronomo() {
+        clearInterval(interval);
+        document.querySelectorAll('.bolinha').forEach(b => b.classList.remove('ativa'));
+    }
+
+    function registrarErro() {
+        erros++;
+        lblErros.textContent = "Erros: " + erros;
+    }
+
+    document.getElementById('btn-start').addEventListener('click', iniciarMetronomo);
+    document.getElementById('btn-stop').addEventListener('click', pararMetronomo);
+    document.getElementById('btn-erro').addEventListener('click', registrarErro);
+    document.getElementById('btn-reset').addEventListener('click', function() {
+        erros = 0;
+        lblErros.textContent = "Erros: 0";
+    });
+
+    entryBolinhas.addEventListener('change', gerarBolinhas);
+    gerarBolinhas();
+});
+
+</script>
+
+
+
+</body>
+</html>
+
