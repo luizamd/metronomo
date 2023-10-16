@@ -67,18 +67,41 @@
     let rodadas = 0;
     let erros = 0;
     let tempo = 0;
-    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    //let audioContext = new (window.AudioContext || window.webkitAudioContext)();
     let oscillator;
     let startTime = null;
     let percAcertos = 0;
+    // Crie o AudioContext uma vez
+    let audioContext;
+
+function initAudio() {
+    // Se o audioContext já estiver definido, retorne
+    if (audioContext) return;
+
+    // Caso contrário, crie um novo AudioContext
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // No iOS, pode ser necessário 'resumir' o contexto
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+}
+
+function ensureAudioIsResumed() {
+    if (audioContext && audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+}
 
 function playBeep() {
+    ensureAudioIsResumed();
+    
     oscillator = audioContext.createOscillator();
     oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // 440 Hz é a frequência de um A4 (Lá)  //220 é um A3
+    oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
     oscillator.connect(audioContext.destination);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.1); // O beep durará 100ms
+    oscillator.stop(audioContext.currentTime + 0.2);
 }
 
 
@@ -101,6 +124,7 @@ function playBeep() {
     }
 
     function iniciarMetronomo() {
+    initAudio();
     	startTime = new Date();
         clearInterval(interval);
         currentBolinha = 0;
@@ -147,7 +171,13 @@ function playBeep() {
         lblErros.textContent = "Erros: " + erros;
     }
 
-    document.getElementById('btn-start').addEventListener('click', iniciarMetronomo);
+    //document.getElementById('btn-start').addEventListener('click', iniciarMetronomo);
+    // Use algum botão ou interação inicial para iniciar o áudio
+   document.getElementById("btn-start").addEventListener("click", function() {
+      initAudio();
+      playBeep();
+      iniciarMetronomo();
+   });
     document.getElementById('btn-stop').addEventListener('click', pararMetronomo);
     document.getElementById('btn-erro').addEventListener('click', registrarErro);
     document.getElementById('btn-reset').addEventListener('click', function() {
@@ -165,4 +195,3 @@ function playBeep() {
 
 </body>
 </html>
-
