@@ -75,16 +75,10 @@
     let audioContext;
 
 function initAudio() {
-    // Se o audioContext já estiver definido, retorne
-    if (audioContext) return;
-
-    // Caso contrário, crie um novo AudioContext
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-    // No iOS, pode ser necessário 'resumir' o contexto
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
+    if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return audioContext;
 }
 
 function ensureAudioIsResumed() {
@@ -94,14 +88,16 @@ function ensureAudioIsResumed() {
 }
 
 function playBeep() {
-    ensureAudioIsResumed();
-    
-    oscillator = audioContext.createOscillator();
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
-    oscillator.connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.2);
+    let ctx = initAudio();	
+   // A tentativa de resumir a cada vez garante que estamos sempre em um estado jogável.
+        ctx.resume().then(() => {
+            oscillator = ctx.createOscillator();
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(220, ctx.currentTime);
+            oscillator.connect(ctx.destination);
+            oscillator.start();
+            oscillator.stop(ctx.currentTime + 0.2);
+        });
 }
 
 
@@ -174,10 +170,12 @@ function playBeep() {
     //document.getElementById('btn-start').addEventListener('click', iniciarMetronomo);
     // Use algum botão ou interação inicial para iniciar o áudio
    document.getElementById("btn-start").addEventListener("click", function() {
-      initAudio();
-      playBeep();
-      iniciarMetronomo();
-   });
+        // Tente inicializar e retomar o contexto de áudio aqui também.
+        initAudio().resume().then(() => {
+            playBeep();
+            iniciarMetronomo();
+        });
+    });
     document.getElementById('btn-stop').addEventListener('click', pararMetronomo);
     document.getElementById('btn-erro').addEventListener('click', registrarErro);
     document.getElementById('btn-reset').addEventListener('click', function() {
